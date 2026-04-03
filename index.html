@@ -40,6 +40,7 @@ function bootMsg(t){var s=document.getElementById('boot-status');if(s)s.textCont
 
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" onload="bootMsg('React loaded...')" onerror="bootMsg('Failed to load React')"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onload="bootMsg('ReactDOM loaded...')" onerror="bootMsg('Failed to load ReactDOM')"></script>
+<script src="https://unpkg.com/prop-types@15/prop-types.min.js" onload="bootMsg('PropTypes loaded...')" onerror="bootMsg('Failed to load PropTypes')"></script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js" onload="bootMsg('Babel loaded...')" onerror="bootMsg('Failed to load Babel')"></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" onload="bootMsg('Recharts loaded...')" onerror="bootMsg('Failed to load Recharts')"></script>
 
@@ -49,6 +50,7 @@ window.addEventListener('DOMContentLoaded', function() {
   var missing = [];
   if (typeof React === 'undefined') missing.push('React');
   if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+  if (typeof PropTypes === 'undefined') missing.push('PropTypes');
   if (typeof Recharts === 'undefined') missing.push('Recharts');
   if (missing.length) {
     document.getElementById('err').style.display = 'block';
