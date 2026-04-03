@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAForge v6 — SFL Consulting</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1A1A1F;color:#EAEAE8;font-family:Outfit,system-ui,sans-serif;overflow-x:hidden}
+#root{min-height:100vh}
+#boot{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px}
+#boot .t{font-family:'JetBrains Mono',monospace;font-size:12px;color:#6E6E78}
+#boot .g{color:#D4A24C;font-size:14px;font-weight:500;font-family:'JetBrains Mono',monospace}
+#err{display:none;background:#2A2A30;border:1px solid #F87171;border-radius:8px;padding:20px;margin:20px;color:#F87171;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:300px;overflow:auto}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#222228}
+::-webkit-scrollbar-thumb{background:#3E3E48;border-radius:3px}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="root">
+  <div id="boot">
+    <svg width="48" height="48" viewBox="0 0 68 68"><polygon points="34,4 61,19 61,49 34,64 7,49 7,19" fill="none" stroke="#D4A24C" stroke-width="2"/><rect x="20" y="30" width="28" height="3" rx="1" fill="#D4A24C"/><path d="M23,33 L23,41 L29,41 L29,38 L39,38 L39,41 L45,41 L45,33" fill="none" stroke="#D4A24C" stroke-width="1.2"/><text x="34" y="53" text-anchor="middle" fill="#D4A24C" font-size="7.5" font-weight="700" font-family="monospace" letter-spacing="1">BA</text></svg>
+    <span class="g">BAForge v6</span>
+    <span class="t" id="boot-status">Loading libraries...</span>
+  </div>
+</div>
+<div id="err"></div>
+
+<script>
+window.onerror=function(m,u,l,c,e){
+  document.getElementById('err').style.display='block';
+  document.getElementById('err').textContent='Error: '+m+'\nLine: '+l+'\n'+(e?e.stack:'');
+  return true;
+};
+function bootMsg(t){var s=document.getElementById('boot-status');if(s)s.textContent=t;}
+</script>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" onload="bootMsg('React loaded...')" onerror="bootMsg('Failed to load React')"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onload="bootMsg('ReactDOM loaded...')" onerror="bootMsg('Failed to load ReactDOM')"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js" onload="bootMsg('Babel loaded...')" onerror="bootMsg('Failed to load Babel')"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" onload="bootMsg('Recharts loaded...')" onerror="bootMsg('Failed to load Recharts')"></script>
+
+<script>
+// Verify all globals before Babel runs
+window.addEventListener('DOMContentLoaded', function() {
+  var missing = [];
+  if (typeof React === 'undefined') missing.push('React');
+  if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+  if (typeof Recharts === 'undefined') missing.push('Recharts');
+  if (missing.length) {
+    document.getElementById('err').style.display = 'block';
+    document.getElementById('err').textContent = 'Missing globals: ' + missing.join(', ') + '\nCDN scripts may have failed to load. Check browser console (F12).';
+    document.getElementById('boot-status').textContent = 'CDN load failed: ' + missing.join(', ');
+  }
+});
+</script>
+
+<script type="text/babel">
+try {
+
+const { useState, useRef, useEffect, useCallback } = React;
+const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip } = Recharts;
+
+
+const Z={bg:"#1A1A1F",sf:"#222228",cd:"#2A2A30",rs:"#32323A",bd:"#3E3E48",tx:"#EAEAE8",t2:"#A8A8B0",t3:"#6E6E78",gd:"#D4A24C",gl:"#EAC56E",g3:"#9A7535",gb:"#2E2820",gn:"#4ADE80",rd:"#F87171",am:"#FBBF24",bl:"#60A5FA"};
+const PC=["#5B8DEF","#9B7AE8","#38BDF8","#F47067","#4ADE80","#FAAD3F","#5B8DEF","#9B7AE8","#38BDF8","#F47067","#4ADE80","#FAAD3F"];
+const GR=[{n:"Plan",p:[0,1]},{n:"Define",p:[2,3]},{n:"Execute",p:[4,5]},{n:"Validate",p:[6,7]},{n:"Deliver",p:[8,9]},{n:"Govern",p:[10,11]}];
+
+const PH=[
+  {id:"setup",n:"Setup",t:[{k:"project",l:"Project Info",c:["Field","Value"]}],ai:"Project scope.",ws:"Fill in project metadata."},
+  {id:"discovery",n:"Discovery",t:[{k:"stakeholders",l:"Stakeholders",c:["Name","Role","Department","Influence","Readiness","Done"]},{k:"pain_points",l:"Pain Points",c:["ID","Area","Description","Impact","Frequency","Owner"]},{k:"compliance",l:"Compliance",c:["Regulation","Applicable","Impact","Notes"]}],ai:"Current state, stakeholders, compliance.",ws:"Capture stakeholders, pain points, compliance."},
+  {id:"design",n:"Design",t:[{k:"requirements",l:"Requirements",c:["REQ-ID","Title","Description","Source","Category","Priority","Status"]},{k:"kpis",l:"KPIs",c:["KPI-ID","Name","Current","Target","Measurement","Owner"]}],ai:"Requirements and KPIs.",ws:"Capture requirements with MoSCoW priority."},
+  {id:"logic",n:"Business Logic",t:[{k:"actors",l:"Actors",c:["Actor","Type","Create","Read","Update","Delete","Notes"]},{k:"workflows",l:"Workflows",c:["WF-ID","Name","Trigger","Step #","Step Name","Actor","System","Decision","Output"]},{k:"rules",l:"Business Rules",c:["BR-ID","Name","Description","IF Condition","THEN Action","ELSE Action","Source","Status"]}],ai:"Actors, workflows, IF/THEN/ELSE rules.",ws:"Define actors with CRUD, workflows, business rules."},
+  {id:"datamodel",n:"Data Model",t:[{k:"entities",l:"Entities",c:["Entity","Description","Source System","Target System","Key Fields","Records"]},{k:"fields",l:"Field Mapping",c:["Entity","Source Field","Source Type","Target Field","Target Type","Transform","Mandatory","Status","BR Ref","Compliance"]}],ai:"Entities and field mapping.",ws:"Map every field source-to-target with transforms."},
+  {id:"apispec",n:"API Specs",t:[{k:"endpoints",l:"Endpoints",c:["EP-ID","Method","Path","Description","Entity","Auth","Rate Limit"]},{k:"payloads",l:"Payloads",c:["EP-ID","Direction","Field Path","Type","Required","Description","Example"]},{k:"errors",l:"Errors",c:["EP-ID","HTTP Status","Code","Description","Retry","Resolution"]}],ai:"API endpoints, payloads, errors.",ws:"Define endpoints, payload fields, error codes."},
+  {id:"build",n:"Build",t:[{k:"nfrs",l:"NFRs",c:["NFR-ID","Category","Requirement","Target","Priority","Validation"]},{k:"assumptions",l:"Assumptions",c:["ID","Type","Description","Impact if Wrong","Status","Risk"]},{k:"decisions",l:"Decisions",c:["DEC-ID","Decision","Rationale","Alternatives","Date","By"]}],ai:"NFRs, assumptions, decisions.",ws:"Capture NFRs, assumptions, architectural decisions."},
+  {id:"deploy",n:"Deploy",t:[{k:"rollout",l:"Rollout",c:["Phase","Activity","Owner","Start","End","Deps","Status"]},{k:"training",l:"Training",c:["Session","Audience","Date","Duration","Materials","Trainer","Status"]}],ai:"Rollout and training.",ws:"Plan rollout phases and training sessions."},
+  {id:"trace",n:"Traceability",t:[{k:"rtm",l:"RTM",c:["REQ-ID","Requirement","US-ID","User Story","TC-ID","Test","Status","Coverage"]}],ai:"Requirements traceability.",ws:"Link requirements to stories and test cases."},
+  {id:"openqs",n:"Open Items",t:[{k:"questions",l:"Questions",c:["OQ-ID","Question","Owner","Due","Status","Answer","Decided"]},{k:"glossary",l:"Glossary",c:["Term","Definition","Domain","Source","Related"]},{k:"risks",l:"Risks",c:["RISK-ID","Description","Prob","Impact","Mitigation","Owner","Status"]}],ai:"Questions, glossary, risks.",ws:"Log questions, build glossary, track risks."},
+  {id:"sdlc",n:"SDLC",t:[{k:"backlog",l:"Backlog",c:["JIRA-ID","Type","Title","Priority","Sprint","Pts","Assignee","Status"]},{k:"raci",l:"RACI",c:["Activity","Responsible","Accountable","Consulted","Informed"]}],ai:"Backlog and RACI.",ws:"Map to Jira items, define RACI."},
+  {id:"generate",n:"Generate",t:[{k:"documents",l:"Documents",c:["Doc Type","Title","Date","Status","Version"]},{k:"signoff",l:"Sign-off",c:["Reviewer","Role","Status","Comments","Date"]}],ai:"Documents and sign-off.",ws:"Track docs and collect sign-offs."},
+];
+
+/* ═══ SEED ═══ */
+const SD={};PH.forEach((_,i)=>{SD[i]={};PH[i].t.forEach(t=>{SD[i][t.k]=[]})});
+SD[0].project=[["Project Name","Real Estate Tool — Property Management Modernisation"],["Client","EuroGov Agency"],["Domain","EU Institution — Real Estate"],["Type","ABAC → Financial Hub Migration"],["Start","2024-06-01"],["End","2025-03-31"],["Sponsor","Director of Administration"],["BA Lead","Stéphane Lefort (SFL Consulting)"]];
+SD[1].stakeholders=[["Marc Hendrickx","Asset Owner","DAS","High","Complete","Y"],["Elena Vassileva","PM","IT","High","Complete","Y"],["Thomas Richter","FH API Lead","DG BUDG","High","Complete","Y"],["Sophie Laurent","Contract Mgr","Deleg.","Medium","In Progress","N"],["Karim Bouzidi","Security","IT Sec","Medium","Complete","Y"],["Ingrid Svensson","ABAC Admin","DG BUDG","Medium","Complete","Y"],["Patrick Moreau","Infra","IT Ops","Low","Complete","Y"],["Ana Rodrigues","End User","Deleg.","Low","Pending","N"]];
+SD[1].pain_points=[["PP-001","Contracts","LCK manually copied","High","Every contract","Hendrickx"],["PP-002","Freshness","Stale data","High","Daily","Laurent"],["PP-003","Validation","No earlyWarning","High","Every valid.","Bouzidi"],["PP-004","Expiry","No auto-flag","Medium","Weekly","Laurent"],["PP-005","Errors","No structured msgs","Medium","~5%","Richter"],["PP-006","IBAN","No GDPR mask","High","Every view","Bouzidi"]];
+SD[1].compliance=[["EU Financial Reg","Y","High","ABAC/FH"],["Reg 2018/1725","Y","High","IBAN mask"],["ISMS","Y","Medium","mTLS+audit"],["ISAE 3402","Y","Medium","Controls"],["Internal Audit","Y","Medium","Traceability"]];
+SD[2].requirements=[["REQ-001","Status Lifecycle","DRAFT→IN FORCE→EXPIRED","BR003","Functional","Must","Validated"],["REQ-002","LCK Fetch","<2s from FH","Richter","Functional","Must","Validated"],["REQ-003","LCK Format","EAS.XXXXXX","BR053","Functional","Must","Validated"],["REQ-004","LEF Integration","Landlord from FH","Richter","Functional","Must","Validated"],["REQ-005","BAF Compliance","IBAN+earlyWarning","BR055","Functional","Must","Validated"],["REQ-006","Auto-expiry","02:01 batch","BR060","Functional","Must","Validated"],["REQ-007","IBAN Masking","Last 4 only","GDPR","Regulatory","Must","Validated"],["REQ-008","Sync API","<2s read-only","Meeting","Non-Functional","Must","Validated"],["REQ-009","Audit Trail","Log all ops","ISAE","Regulatory","Must","In Progress"],["REQ-010","Error Msgs","Structured","BR064","Functional","Should","In Progress"]];
+SD[2].kpis=[["KPI-001","API Resp","None","<2s","APM","Richter"],["KPI-002","Create Time","45m","<5m","Timing","Laurent"],["KPI-003","Accuracy","85%","99.5%","Audit","Hendrickx"],["KPI-004","Compliance","0%","100%","Logs","Bouzidi"]];
+SD[3].actors=[["DAS Staff","Human","Y","Y","Y","N","Creates/updates"],["Division Support","Human","Y","Y","Y","Y","Full CRUD"],["System Admin","Human","N","Y","Y","N","Config"],["App","System","N","Y","N","N","Orchestrates"],["Financial Hub","External","N","Y","N","N","Read-only"],["ABAC","External","N","Y","N","N","Legacy"],["EU Login","External","N","N","N","N","Auth"],["Batch","System","N","Y","Y","N","02:01"]];
+SD[3].workflows=[["WF-001","Create Contract","LCK ref","1","Enter ref","DAS Staff","App","N","Ref"],["WF-001","","","2","Validate","App","App","Y","EAS.X"],["WF-001","","","3","GET /legal-commitments","App","FH","N","JSON"],["WF-001","","","4","Extract keys","App","App","N","keys"],["WF-001","","","5","GET /legal-entities","App","FH","N","LEF"],["WF-001","","","6","GET /bank-accounts","App","FH","N","BAF"],["WF-001","","","7","Display","App","App","N","Form"],["WF-001","","","8","Confirm","DAS","App","Y","DRAFT"],["WF-002","Validate","Click","1","earlyWarning","App","FH","Y","P/F"],["WF-002","","","2","IBAN","App","App","Y","OK"],["WF-002","","","3","Expiry","App","App","Y","Future"],["WF-002","","","4","Status","App","FH","Y","VALID"],["WF-002","","","5","Category","App","FH","Y","BLDG"],["WF-002","","","6","Set IN FORCE","App","App","N","Done"],["WF-003","Auto-Expiry","02:01","1","Query","Batch","App","N","List"],["WF-003","","","2","EXPIRED","Batch","App","N","Set"],["WF-003","","","3","Log","Batch","App","N","Audit"]];
+SD[3].rules=[["BR-003","Status","Transitions","status=DRAFT","→IN FORCE","Reject","Design","Validated"],["BR-053","LCK Format","EAS.XXXXXX","regex","API call","Error","ABAC","Validated"],["BR-055","BAF","All pass","eW=[] AND iban AND exp","Allow","Block","EU Fin","Validated"],["BR-055b","earlyWarning","Empty","len===0","Pass","Flag","Compliance","Validated"],["BR-060","Expiry","After end","end<TODAY","EXPIRED","None","Ops","Validated"],["BR-064","Errors","Structured","4xx/5xx","Show msg","N/A","UX","In Progress"],["BR-067","IBAN","Mask","not priv","****XXXX","Full","GDPR","Validated"]];
+SD[4].entities=[["LCK","Lease Contract","ABAC","Financial Hub","local_key","~500"],["LEF","Legal Entity","ABAC","Financial Hub","local_key","~300"],["BAF","Bank Account","ABAC","Financial Hub","local_key,iban","~250"]];
+SD[4].fields=[["LCK","local_key","String","local_key","String(20)","Direct","Y","ok","BR-053",""],["LCK","commitment_pos","Int","commitment_position","Int","Direct","Y","ok","",""],["LCK","budget_type","String","budget_type.description","String","Nested","N","ok","",""],["LCK","amount_eur","Decimal","total_amount.euro.amount","Dec(15,2)","Nested","Y","ok","",""],["LCK","currency","String","total_amount.initial_currency.code","Str(3)","Nested","Y","ok","",""],["LCK","contractor_1_key","String","contractor_1.key","String","Nested","Y","ok","","→LEF"],["LCK","contractor_1_name","String","contractor_1.name","String","Nested","N","ok","",""],["LCK","contractor_2_key","String","contractor_2.key","String","Nested","N","ok","","Opt"],["LCK","start_date","Date","start_date","Date","Direct","Y","ok","",""],["LCK","end_date","Date","end_date","Date","Direct","Y","ok","BR-060",""],["LCK","central_status","String","central_status.code","String","Nested","Y","ok","BR-055",""],["LCK","classification","String","classification.category.code","String","Nested","Y","ok","BR-055",""],["LCK","responsible_org","String","responsible_organisation.name","String","Nested","N","ok","",""],["LCK","early_warning","Array","early_warning[]","Array","Direct","N","ok","BR-055b",""],["LCK","audit_created","DT","audit_info.creation_date","DT","Direct","N","ok","",""],["LCK","audit_modified","DT","audit_info.modification_date","DT","Direct","N","ok","",""],["LEF","local_key","String","local_key","Str(20)","Direct","Y","ok","",""],["LEF","official_name","String","official_name","String","Direct","Y","ok","",""],["LEF","official_name_2","String","official_name_2","String","Direct","N","ok","",""],["LEF","street","String","official_address.street","String","Nested","N","ok","",""],["LEF","post_code","String","official_address.post_code","String","Nested","N","ok","",""],["LEF","city","String","official_address.town","String","Nested","N","ok","",""],["LEF","country","String","official_address.country.code","Str(2)","Nested","N","ok","",""],["LEF","vat_number","String","vat_number","String","Direct","N","ok","",""],["LEF","entity_type","String","_type","String","Direct","Y","ok","",""],["LEF","early_warning","Array","early_warning[]","Array","Direct","N","ok","BR-055b",""],["BAF","local_key","String","local_key","Str(20)","Direct","Y","ok","",""],["BAF","iban","String","iban","Str(34)","Direct","Y","ok","BR-067",""],["BAF","bic_code","String","bic_code","Str(11)","Direct","N","ok","",""],["BAF","currency","String","currency.code","Str(3)","Direct","N","ok","",""],["BAF","account_name","String","account_name","String","Direct","N","ok","",""],["BAF","bank_name","String","bank_name","String","Direct","N","ok","",""],["BAF","expiry_date","Date","expiry_date","Date","Direct","N","ok","BR-055",""],["BAF","status","String","status.code","String","Direct","Y","ok","BR-055",""],["BAF","early_warning","Array","early_warning[]","Array","Direct","N","ok","BR-055b",""],["BAF","linked_lef","String","sub-endpoint→key","String","Sub-EP","N","ok","",""]];
+SD[5].endpoints=[["EP-01","GET","/legal-commitments/{key}","Contract","LCK","mTLS","100/m"],["EP-02","GET","/legal-entities/{key}","Landlord","LEF","mTLS","100/m"],["EP-03","GET","/bank-accounts/{key}","Bank","BAF","mTLS","100/m"],["EP-04","GET","/bank-accounts/{k}/legal-entities","Linked","BAF→LEF","mTLS","50/m"],["EP-05","GET","/legal-commitments?q={q}","Search","LCK","mTLS","20/m"]];
+SD[5].payloads=[["EP-01","R","$.local_key","Str","Y","Ref","EAS.ABC"],["EP-01","R","$.total_amount.euro.amount","Dec","Y","EUR","125000"],["EP-01","R","$.contractor_1.key","Str","Y","Ctr","LEF.X"],["EP-01","R","$.central_status.code","Str","Y","Status","VALID"],["EP-01","R","$.early_warning[]","Arr","N","Warn","[]"],["EP-02","R","$.official_name","Str","Y","Name","SA"],["EP-03","R","$.iban","Str","Y","IBAN","BE68.."],["EP-03","R","$.early_warning[]","Arr","N","Flags","[]"]];
+SD[5].errors=[["EP-01","404","NOT_FOUND","Missing","None","Check"],["EP-01","403","AUTH","No access","None","Admin"],["EP-01","500","ERROR","Internal","×2","Incident"],["EP-02","404","NOT_FOUND","No entity","None","Key"],["EP-03","404","NOT_FOUND","No acct","None","EP-04"],["EP-03","410","EXPIRED","Old","None","Landlord"]];
+SD[6].nfrs=[["N-001","Perf","API","<2s","Must","APM"],["N-002","Perf","Users","50","Must","Load"],["N-003","Sec","Auth","mTLS","Must","Pen"],["N-004","Sec","IBAN","Mask","Must","Audit"],["N-005","Avail","Up","99.5%","Must","Mon"],["N-006","Avail","Batch","15m","Should","Mon"],["N-007","Data","R/O","No write","Must","Rev"],["N-008","Audit","Log","All","Must","Analysis"]];
+SD[6].assumptions=[["A-1","Assumption","FH UAT Q3","Delay 4w","Validated",""],["A-2","Assumption","Sync <2s","Poll","Validated",""],["A-3","Assumption","eW stable","Parse","Validated","RSK-2"],["A-4","Dep","EU Login first","Blocks","Validated",""],["A-5","Assumption","UI mask","API","Validated",""],["A-6","Constraint","Read-only","Simple","Validated",""]];
+SD[6].decisions=[["D-1","Sync only","<2s ok","Async","Nov 15","Richter"],["D-2","UI mask","Simple","API","Oct 20","Bouzidi"],["D-3","Batch 02:01","Low","RT","Sep 15","Hendrickx"],["D-4","Pre-valid","Less calls","Server","Sep 10","Vassileva"]];
+SD[7].rollout=[["1","UAT+API","Moreau","Dec 1","Dec 15","Login","Complete"],["2","Integration","Vassileva","Jan 6","Jan 31","UAT","Complete"],["3","UAT DAS","Laurent","Feb 1","Feb 21","Data","Complete"],["4","Security","Bouzidi","Feb 15","Feb 28","Stable","Complete"],["5","Prod","Moreau","Mar 1","Mar 7","Sign","Complete"],["6","Hypercare","Hendrickx","Mar 8","Mar 21","Live","Complete"]];
+SD[7].training=[["KT-1","Flow","DAS","Feb 24","2h","Guide","Laurent","Done"],["KT-2","Tech","IT","Feb 25","3h","Specs","Richter","Done"],["KT-3","Admin","Admins","Feb 26","2h","Guide","Moreau","Done"]];
+SD[8].rtm=[["REQ-001","Status","US-1","Enforce","TC-1","DRAFT→IN FORCE","Validated","Full"],["REQ-002","Fetch","US-2","FH data","TC-2","ref→<2s","Validated","Full"],["REQ-003","Format","US-3","Reject bad","TC-3","bad→error","Validated","Full"],["REQ-004","LEF","US-4","Landlord","TC-4","key→shown","Validated","Full"],["REQ-005","BAF","US-5","Check","TC-5","warn→block","Validated","Full"],["REQ-006","Expiry","US-6","Auto","TC-6","batch→EXP","Validated","Full"],["REQ-007","IBAN","US-7","Mask","TC-7","view→****","Validated","Full"],["REQ-008","Sync","US-8","Instant","TC-8","call→<2s","Validated","Full"],["REQ-009","Audit","US-9","Log","TC-9","op→entry","In Prog","Partial"],["REQ-010","Errors","US-10","Msg","TC-10","404→msg","In Prog","Partial"]];
+SD[9].questions=[["OQ-1","FH maintenance?","Moreau","Dec 15","Resolved","Banner","Dec 10"],["OQ-2","eW for DRAFT?","Hendrickx","Nov 30","Resolved","Warn only","Nov 25"],["OQ-3","Retention?","Bouzidi","Jan 15","Resolved","7 years","Jan 10"],["OQ-4","Expired view?","Laurent","Jan 20","Resolved","Toggle","Jan 18"],["OQ-5","No ctr_2?","Richter","Nov 20","Resolved","Skip","Nov 18"],["OQ-6","Pagination?","Richter","Feb 15","Open","",""],["OQ-7","CSV IBAN?","Bouzidi","Feb 20","Open","",""]];
+SD[9].glossary=[["LCK","Legal Commitment Key","RE","ABAC","LEF,BAF"],["LEF","Legal Entity File","Legal","ABAC","LCK"],["BAF","Bank Account File","Finance","ABAC","LEF"],["ABAC","Accrual Accounting","EU","BUDG","FH"],["Financial Hub","Central API","Arch","BUDG","ABAC"],["earlyWarning","Compliance flags","Compl","FH","BR-055"],["DAS","Delegation Admin","Org","Agency","Staff"],["mTLS","Mutual TLS","Sec","ISMS","Login"]];
+SD[9].risks=[["R-1","FH downtime","Med","High","Cache","Moreau","Mitigated"],["R-2","eW change","Low","High","Pin ver","Richter","Mitigated"],["R-3","IBAN bypass","Low","High","Pen test","Bouzidi","Mitigated"],["R-4","Resistance","Med","Med","Training","Laurent","Monitoring"],["R-5","Batch fail","Low","High","Alert","Moreau","Mitigated"]];
+SD[10].backlog=[["RET-1","Story","LCK valid","Must","S1","3","A","Done"],["RET-2","Story","FH LCK","Must","S1","5","A","Done"],["RET-3","Story","FH LEF","Must","S1","5","A","Done"],["RET-4","Story","FH BAF","Must","S2","5","A","Done"],["RET-5","Story","Form","Must","S2","8","B","Done"],["RET-6","Story","Validate","Must","S3","8","B","Done"],["RET-7","Story","IBAN","Must","S3","3","A","Done"],["RET-8","Story","Batch","Must","S4","5","A","Done"],["RET-9","Story","Errors","Should","S4","5","B","WIP"],["RET-10","Story","Audit","Must","S5","8","A","WIP"],["RET-11","Bug","eW parse","Must","S3","2","A","Done"],["RET-12","Task","UAT","Must","S1","3","Ops","Done"]];
+SD[10].raci=[["Reqs","BA","Owner","DAS,FH","PM"],["API","FH","BA","Arch","PM"],["Mapping","BA","Owner","ABAC","DAS"],["Security","Sec","PM","Ops","Owner"],["UAT","DAS","PM","BA","Owner"],["Go-Live","Owner","Dir","All","DAS"]];
+SD[11].signoff=[["Hendrickx","Owner","Approved","Complete","Feb 28"],["Richter","FH","Approved","Match","Feb 27"],["Bouzidi","Sec","Approved","GDPR ok","Feb 26"],["Vassileva","PM","Approved","Ready","Feb 28"],["Laurent","DAS","Approved*","Tooltips","Feb 25"]];
+
+/* ═══ Utils ═══ */
+const DB="bf6";
+function odb(){return new Promise((r,j)=>{const q=indexedDB.open(DB,1);q.onupgradeneeded=()=>q.result.createObjectStore("p",{keyPath:"id"});q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+async function sav(d){const db=await odb();return new Promise((r,j)=>{const t=db.transaction("p","readwrite");t.objectStore("p").put({id:"ret",d,u:Date.now()});t.oncomplete=r;t.onerror=()=>j(t.error)})}
+function ce(v){const s=String(v||"");return s.includes(",")||s.includes('"')||s.includes("\n")?`"${s.replace(/"/g,'""')}"`:s}
+function pCSV(t){const l=t.trim().split("\n").filter(x=>x.trim());if(l.length<2)return[];return l.slice(1).map(s=>{const r=[];let c="",q=false;for(const h of s){if(h==='"'){q=!q;continue}if(h===","&&!q){r.push(c.trim());c="";continue}c+=h}r.push(c.trim());return r})}
+function dlFile(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function dlCSV(cols,rows,name){dlFile(new Blob([[cols.map(ce).join(","),...rows.map(r=>r.map(ce).join(","))].join("\n")],{type:"text/csv"}),name)}
+
+/* ═══ APP ═══ */
+function BAForge(){
+  const[vw,setVw]=useState("dash");
+  const[pi,sPi]=useState(0);const[ti,sTi]=useState(0);const[er,sEr]=useState(null);
+  const[D,sD]=useState(JSON.parse(JSON.stringify(SD)));
+  const[ms,sMs]=useState([]);const[inp,sInp]=useState("");const[ld,sLd]=useState(false);const[sv,sSv]=useState(true);
+  const cEnd=useRef(null),fRef=useRef(null),sT=useRef(null);
+  useEffect(()=>{cEnd.current?.scrollIntoView({behavior:"smooth"})},[ms]);
+  const doSave=useCallback(async()=>{try{await sav(D);sSv(true)}catch(e){}},[D]);
+  useEffect(()=>{sSv(false);if(sT.current)clearTimeout(sT.current);sT.current=setTimeout(doSave,1500);return()=>clearTimeout(sT.current)},[D,doSave]);
+
+  const ph=PH[pi],tb=ph.t[ti],td=D[pi]?.[tb?.k]||[];
+  const sTd=rows=>sD(p=>({...p,[pi]:{...p[pi],[tb.k]:rows}}));
+  const addR=()=>{sTd([...td,tb.c.map(()=>"")]);sEr(td.length)};
+  const uC=(r,c,v)=>sTd(td.map((w,i)=>i===r?w.map((l,j)=>j===c?v:l):w));
+  const dR=r=>{sTd(td.filter((_,i)=>i!==r));sEr(null)};
+  const impF=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{const rows=pCSV(ev.target.result);if(rows.length)sTd([...td,...rows.map(r=>{while(r.length<tb.c.length)r.push("");return r.slice(0,tb.c.length)})]);};rd.readAsText(f);e.target.value=""};
+  const expF=()=>dlCSV(tb.c,td,`BAForge_${ph.id}_${tb.k}.csv`);
+  const oP=i=>{sPi(i);sTi(0);setVw("phase");sEr(null)};
+  const oW=i=>{sPi(i);setVw("wiz");sMs([{role:"assistant",content:`**${PH[i].n}** — ${PH[i].ai}\n\nTables: ${PH[i].t.map(t=>`**${t.l}** (${t.c.join(", ")})`).join("; ")}\n\nDescribe what you need — I'll output CSV you can import.`}])};
+  const send=async()=>{if(!inp.trim()||ld)return;const u=inp.trim();sInp("");const nm=[...ms,{role:"user",content:u}];sMs(nm);sLd(true);try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:`BAForge AI — ${ph.n}. ${ph.ai} Real Estate Tool. CSV in \`\`\`csv fences.`,messages:nm.map(m=>({role:m.role,content:m.content}))})});const d=await r.json();sMs([...nm,{role:"assistant",content:d.content?.map(b=>b.text||"").filter(Boolean).join("\n")||"Error."}])}catch{sMs([...nm,{role:"assistant",content:"Connection error."}])}sLd(false)};
+
+  // Template downloads
+  const dlTpl=(p)=>p.t.forEach(t=>dlCSV(t.c,[],`BAForge_Tpl_${p.id}_${t.k}.csv`));
+  const dlAll=()=>PH.forEach((p,i)=>p.t.forEach(t=>dlCSV(t.c,[],`BAForge_Tpl_${i+1}_${t.k}.csv`)));
+  const dlProj=()=>PH.forEach((p,i)=>p.t.forEach(t=>{const rows=D[i]?.[t.k]||[];if(rows.length)dlCSV(t.c,rows,`BAForge_Data_${i+1}_${t.l.replace(/\s/g,"_")}.csv`)}));
+
+  const tot=Object.values(D).reduce((s,p)=>s+Object.values(p).reduce((s2,t)=>s2+t.length,0),0);
+  const qs=PH.map((p,i)=>p.t.reduce((s,t)=>s+(D[i]?.[t.k]?.length>0?1:0),0)/Math.max(p.t.length,1));
+  const oQ=Math.round((qs.reduce((a,b)=>a+b,0)/PH.length)*100);
+  const grade=oQ>=80?"A":oQ>=60?"B":oQ>=40?"C":"D";
+  const reqSt=[{n:"Validated",v:(D[2]?.requirements||[]).filter(r=>r[6]==="Validated").length,f:Z.gn},{n:"In Progress",v:(D[2]?.requirements||[]).filter(r=>r[6]==="In Progress").length,f:Z.am}].filter(d=>d.v>0);
+  const fldEnt=[{n:"LCK",v:(D[4]?.fields||[]).filter(f=>f[0]==="LCK").length,f:PC[0]},{n:"LEF",v:(D[4]?.fields||[]).filter(f=>f[0]==="LEF").length,f:PC[1]},{n:"BAF",v:(D[4]?.fields||[]).filter(f=>f[0]==="BAF").length,f:PC[5]}];
+  const sprints=["S1","S2","S3","S4","S5"].map(s=>{const it=(D[10]?.backlog||[]).filter(b=>b[4]===s);return{n:s,done:it.filter(i=>i[7]==="Done").length,wip:it.filter(i=>i[7]==="WIP"||i[7]==="In Progress").length}});
+  const radar=[{d:"Spec",v:80},{d:"Story",v:80},{d:"Test",v:80},{d:"Compl",v:70},{d:"Rules",v:100},{d:"NFR",v:100}];
+  const donut=[{n:"Done",v:oQ,f:Z.gn},{n:"Left",v:100-oQ,f:Z.bd}];
+  const openQ=(D[9]?.questions||[]).filter(q=>q[4]==="Open").length;
+  const resQ=(D[9]?.questions||[]).filter(q=>q[4]==="Resolved").length;
+
+  const F={fontFamily:"'JetBrains Mono',monospace"};
+  const S={fontFamily:"'Playfair Display',serif"};
+  const N={fontFamily:"'Outfit',sans-serif"};
+  const md=t=>t.replace(/```(\w+)?\n([\s\S]*?)```/g,`<pre style="background:${Z.sf};padding:10px;border-radius:6px;font-size:11px;border:1px solid ${Z.bd};margin:6px 0;color:${Z.t2}">$2</pre>`).replace(/\*\*(.*?)\*\*/g,`<strong style="color:${Z.tx}">$1</strong>`).replace(/`(.*?)`/g,`<code style="background:${Z.sf};padding:1px 4px;border-radius:3px;font-size:11px;color:${Z.gl}">$1</code>`).replace(/\n/g,"<br/>");
+  const Card=({title,ch,span})=>(<div style={{background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:10,padding:"14px 16px",gridColumn:span?`span ${span}`:undefined}}><div style={{...F,fontSize:9,color:Z.gd,letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:10}}>{title}</div>{ch}</div>);
+
+  return(
+    <div style={{background:Z.bg,color:Z.tx,minHeight:"100vh",...N}}>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+      <input ref={fRef} type="file" accept=".csv" style={{display:"none"}} onChange={impF}/>
+
+      {/* HEADER */}
+      <div style={{background:Z.sf,borderBottom:`1px solid ${Z.bd}`,padding:"0 20px",display:"flex",alignItems:"center",height:48,position:"sticky",top:0,zIndex:100}}>
+        <div onClick={()=>setVw("dash")} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginRight:16}}>
+          <svg width="24" height="24" viewBox="0 0 68 68"><polygon points="34,4 61,19 61,49 34,64 7,49 7,19" fill="none" stroke={Z.gd} strokeWidth="2"/><rect x="20" y="30" width="28" height="3" rx="1" fill={Z.gd}/><path d="M23,33 L23,41 L29,41 L29,38 L39,38 L39,41 L45,41 L45,33" fill="none" stroke={Z.gd} strokeWidth="1.2"/><circle cx="27" cy="22" r="1" fill={Z.gl} opacity="0.5"/><text x="34" y="53" textAnchor="middle" fill={Z.gd} fontSize="7.5" fontWeight="700" fontFamily="'JetBrains Mono'" letterSpacing="1">BA</text></svg>
+          <span style={{...F,fontSize:14,fontWeight:500,color:Z.gd}}>BAForge</span>
+        </div>
+        {[["dash","Dashboard"],["phase","Data"],["wiz","AI"],["tpl","Templates"],["qual","Quality"]].map(([k,l])=>(
+          <button key={k} onClick={()=>{k==="wiz"?oW(pi):k==="phase"?oP(pi):setVw(k)}} style={{background:"none",border:"none",cursor:"pointer",padding:"14px 10px",...F,fontSize:9,letterSpacing:"0.06em",textTransform:"uppercase",color:vw===k?Z.gd:Z.t3,borderBottom:vw===k?`2px solid ${Z.gd}`:"2px solid transparent"}}>{l}</button>
+        ))}
+        <div style={{flex:1,display:"flex",gap:2,overflowX:"auto",scrollbarWidth:"none",padding:"6px 0",marginLeft:8}}>
+          {PH.map((p,i)=>{const a=pi===i&&(vw==="phase"||vw==="wiz");return(
+            <div key={i} onClick={()=>oP(i)} style={{padding:"3px 7px",borderRadius:5,cursor:"pointer",display:"flex",alignItems:"center",gap:3,flexShrink:0,background:a?`${PC[i]}18`:"transparent",border:`1px solid ${a?PC[i]+"50":"transparent"}`}}>
+              <span style={{...F,fontSize:7,color:a?PC[i]:Z.t3}}>{i+1}</span>
+              {qs[i]===1&&<span style={{fontSize:6,color:Z.gn}}>●</span>}
+            </div>
+          )})}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:5,height:5,borderRadius:"50%",background:sv?Z.gn:Z.am}}/></div>
+        <div onClick={()=>setVw("qual")} style={{cursor:"pointer",padding:"2px 8px",borderRadius:4,background:Z.rs,marginLeft:6,...F,fontSize:9,color:oQ>=60?Z.gn:Z.am}}>{grade}</div>
+      </div>
+
+      {/* ═══ DASHBOARD ═══ */}
+      {vw==="dash"&&(<div style={{padding:"24px",maxWidth:1200,margin:"0 auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:20}}>
+          <div><h1 style={{...S,fontSize:26,fontWeight:700,color:Z.tx,margin:0}}>Real Estate Tool</h1><p style={{...N,fontSize:11,color:Z.t2,margin:"4px 0 0",fontWeight:300}}>EuroGov Agency · {tot} data points</p></div>
+          <div style={{display:"flex",gap:6}}><button onClick={dlProj} style={{...F,fontSize:8,padding:"5px 12px",background:Z.rs,border:`1px solid ${Z.bd}`,borderRadius:5,color:Z.tx,cursor:"pointer"}}>↓ Export</button><button onClick={()=>setVw("tpl")} style={{...F,fontSize:8,padding:"5px 12px",background:Z.gb,border:`1px solid ${Z.gd}30`,borderRadius:5,color:Z.gd,cursor:"pointer"}}>Templates</button></div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"180px 1fr 1fr 1fr",gap:12,marginBottom:14}}>
+          <Card title="Quality" ch={<div style={{display:"flex",flexDirection:"column",alignItems:"center"}}><div style={{position:"relative",width:110,height:110}}><ResponsiveContainer><PieChart><Pie data={donut} cx="50%" cy="50%" innerRadius={36} outerRadius={48} dataKey="v" startAngle={90} endAngle={-270} stroke="none">{donut.map((d,i)=><Cell key={i} fill={d.f}/>)}</Pie></PieChart></ResponsiveContainer><div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}><div style={{...S,fontSize:26,fontWeight:700,color:Z.gn}}>{grade}</div><div style={{...F,fontSize:9,color:Z.t3}}>{oQ}%</div></div></div></div>}/>
+          <Card title="Requirements" ch={<React.Fragment><ResponsiveContainer width="100%" height={120}><BarChart data={reqSt} layout="vertical"><XAxis type="number" hide/><YAxis type="category" dataKey="n" width={70} tick={{fill:Z.t2,fontSize:10}} axisLine={false} tickLine={false}/><Bar dataKey="v" radius={[0,4,4,0]} barSize={16}>{reqSt.map((d,i)=><Cell key={i} fill={d.f}/>)}</Bar></BarChart></ResponsiveContainer><div style={{...F,fontSize:9,color:Z.t3}}>{D[2]?.requirements?.length||0} total</div></React.Fragment>}/>
+          <Card title="Fields by entity" ch={<ResponsiveContainer width="100%" height={135}><BarChart data={fldEnt}><XAxis dataKey="n" tick={{fill:Z.t2,fontSize:10}} axisLine={false} tickLine={false}/><YAxis hide/><Tooltip contentStyle={{background:Z.rs,border:`1px solid ${Z.bd}`,borderRadius:6,fontSize:11,color:Z.tx}}/><Bar dataKey="v" radius={[4,4,0,0]} barSize={28}>{fldEnt.map((d,i)=><Cell key={i} fill={d.f}/>)}</Bar></BarChart></ResponsiveContainer>}/>
+          <Card title="Sprints" ch={<React.Fragment><ResponsiveContainer width="100%" height={120}><BarChart data={sprints}><XAxis dataKey="n" tick={{fill:Z.t2,fontSize:10}} axisLine={false} tickLine={false}/><YAxis hide/><Bar dataKey="done" stackId="a" fill={Z.gn} barSize={22}/><Bar dataKey="wip" stackId="a" fill={Z.am} radius={[4,4,0,0]} barSize={22}/></BarChart></ResponsiveContainer><div style={{display:"flex",gap:10,...F,fontSize:8,color:Z.t3}}><span>● Done</span><span style={{color:Z.am}}>● WIP</span></div></React.Fragment>}/>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 160px",gap:12,marginBottom:14}}>
+          <Card title="Traceability" ch={<ResponsiveContainer width="100%" height={150}><RadarChart data={radar} cx="50%" cy="50%" outerRadius={50}><PolarGrid stroke={Z.bd}/><PolarAngleAxis dataKey="d" tick={{fill:Z.t2,fontSize:9}}/><PolarRadiusAxis domain={[0,100]} tick={false} axisLine={false}/><Radar dataKey="v" stroke={Z.gd} fill={Z.gd} fillOpacity={0.15} strokeWidth={1.5}/></RadarChart></ResponsiveContainer>}/>
+          <Card title="Rollout" ch={<div style={{display:"flex",flexDirection:"column",gap:3}}>{(D[7]?.rollout||[]).map((r,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:5}}><span style={{...F,fontSize:7,color:Z.t3,width:14}}>P{r[0]}</span><div style={{flex:1,height:13,background:Z.rs,borderRadius:3,position:"relative",overflow:"hidden"}}><div style={{height:"100%",width:r[6]==="Complete"?"100%":"50%",background:r[6]==="Complete"?Z.gn:Z.am,borderRadius:3}}/><span style={{position:"absolute",left:4,top:0,...F,fontSize:7,color:Z.tx,lineHeight:"13px"}}>{r[1]}</span></div>{r[6]==="Complete"&&<span style={{fontSize:7,color:Z.gn}}>✓</span>}</div>))}</div>}/>
+          <Card title="Open items" ch={<React.Fragment><div style={{display:"flex",gap:4,marginBottom:6}}><div style={{background:Z.rs,borderRadius:6,padding:"8px",flex:1,textAlign:"center"}}><div style={{...F,fontSize:18,color:Z.am}}>{openQ}</div><div style={{...N,fontSize:7,color:Z.t3}}>Open</div></div><div style={{background:Z.rs,borderRadius:6,padding:"8px",flex:1,textAlign:"center"}}><div style={{...F,fontSize:18,color:Z.gn}}>{resQ}</div><div style={{...N,fontSize:7,color:Z.t3}}>Done</div></div></div><div style={{height:4,background:Z.bd,borderRadius:2}}><div style={{height:4,width:`${(resQ/(openQ+resQ||1))*100}%`,background:Z.gn,borderRadius:2}}/></div><div style={{...F,fontSize:7,color:Z.t3,textAlign:"center",marginTop:3}}>{Math.round((resQ/(openQ+resQ||1))*100)}%</div></React.Fragment>}/>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:5}}>
+          {PH.map((p,i)=>{const rc=p.t.reduce((s,t)=>s+(D[i]?.[t.k]?.length||0),0);return(
+            <div key={i} onClick={()=>oP(i)} style={{background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:7,padding:"9px",cursor:"pointer",borderTop:`2px solid ${PC[i]}`}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{...F,fontSize:7,color:PC[i]}}>{i+1}</span>{qs[i]===1&&<span style={{color:Z.gn,fontSize:7}}>✓</span>}</div>
+              <div style={{...N,fontSize:10,fontWeight:600,color:Z.tx,marginTop:2}}>{p.n}</div>
+              <div style={{...F,fontSize:7,color:Z.t3,marginTop:1}}>{rc} rows</div>
+              <div style={{height:2,background:Z.bd,borderRadius:1,marginTop:4}}><div style={{height:2,borderRadius:1,width:`${qs[i]*100}%`,background:PC[i]}}/></div>
+            </div>)})}
+        </div>
+      </div>)}
+
+      {/* ═══ TEMPLATES ═══ */}
+      {vw==="tpl"&&(<div style={{padding:"24px",maxWidth:1000,margin:"0 auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div><h2 style={{...S,fontSize:22,fontWeight:700,color:Z.tx,margin:0}}>Workshop Templates</h2><p style={{...N,fontSize:11,color:Z.t2,margin:"4px 0 0",fontWeight:300}}>Download CSV templates for workshop capture. Columns match BAForge import exactly.</p></div>
+          <button onClick={dlAll} style={{...F,fontSize:9,padding:"8px 14px",background:`${Z.gd}20`,border:`1px solid ${Z.gd}40`,borderRadius:6,color:Z.gd,cursor:"pointer",fontWeight:500}}>↓ Download All Templates</button>
+        </div>
+
+        <div style={{background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:10,padding:"14px",marginBottom:14}}>
+          <div style={{display:"flex",gap:6,alignItems:"center",...N,fontSize:11,color:Z.t2}}>
+            {["Download template","Fill in workshop","Import CSV into BAForge","Refine with AI wizard"].map((s,i)=>(<React.Fragment key={i}>{i>0&&<span style={{color:Z.t3}}>→</span>}<div style={{background:Z.rs,borderRadius:5,padding:"7px 10px",flex:1,textAlign:"center"}}><span style={{...F,fontSize:9,color:i===3?Z.gn:Z.am,display:"block",marginBottom:2}}>{i+1}</span><span style={{fontWeight:300,fontSize:10}}>{s}</span></div></React.Fragment>))}
+          </div>
+        </div>
+
+        <div style={{background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:10,padding:"14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{flex:1}}><div style={{...F,fontSize:9,color:Z.gn,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Project export</div><div style={{...N,fontSize:11,color:Z.t2,fontWeight:300}}>Download all current project data as CSV files.</div></div>
+          <button onClick={dlProj} style={{...F,fontSize:9,padding:"6px 14px",background:`${Z.gn}15`,border:`1px solid ${Z.gn}30`,borderRadius:5,color:Z.gn,cursor:"pointer"}}>↓ Export Data</button>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+          {PH.map((p,i)=>(<div key={i} style={{background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:7,padding:"9px 12px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:3,height:24,borderRadius:2,background:PC[i],flexShrink:0}}/>
+            <span style={{...F,fontSize:8,color:PC[i],width:14}}>{i+1}</span>
+            <div style={{flex:1}}><div style={{...N,fontSize:12,fontWeight:600,color:Z.tx}}>{p.n}</div><div style={{...N,fontSize:9,color:Z.t3,fontWeight:300}}>{p.t.map(t=>t.l).join(" · ")} · {p.ws}</div></div>
+            <button onClick={()=>dlTpl(p)} style={{...F,fontSize:8,padding:"3px 8px",background:Z.rs,border:`1px solid ${Z.bd}`,borderRadius:4,color:Z.tx,cursor:"pointer"}}>↓ Template</button>
+            <button onClick={()=>oP(i)} style={{...F,fontSize:8,padding:"3px 8px",background:`${PC[i]}12`,border:`1px solid ${PC[i]}25`,borderRadius:4,color:PC[i],cursor:"pointer"}}>Open</button>
+          </div>))}
+        </div>
+      </div>)}
+
+      {/* ═══ DATA CAPTURE ═══ */}
+      {vw==="phase"&&(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 48px)"}}>
+        <div style={{padding:"10px 20px",background:Z.sf,borderBottom:`1px solid ${Z.bd}`,display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:3,height:22,borderRadius:2,background:PC[pi]}}/><span style={{...N,fontSize:16,fontWeight:700,color:Z.tx}}>{ph.n}</span><div style={{flex:1}}/>
+          <button onClick={()=>dlTpl(ph)} style={{...F,fontSize:8,padding:"4px 8px",background:Z.rs,border:`1px solid ${Z.bd}`,borderRadius:4,color:Z.t2,cursor:"pointer"}}>↓ Template</button>
+          <button onClick={()=>oW(pi)} style={{...F,fontSize:9,padding:"5px 12px",background:Z.gb,border:`1px solid ${Z.gd}30`,borderRadius:5,color:Z.gd,cursor:"pointer"}}>◇ AI</button>
+        </div>
+        <div style={{display:"flex",alignItems:"center",background:Z.sf,borderBottom:`1px solid ${Z.bd}`,paddingLeft:20}}>
+          {ph.t.map((t,idx)=>(<button key={idx} onClick={()=>{sTi(idx);sEr(null)}} style={{background:"none",border:"none",cursor:"pointer",padding:"8px 14px",...N,fontSize:11,fontWeight:ti===idx?600:300,color:ti===idx?PC[pi]:Z.t3,borderBottom:ti===idx?`2px solid ${PC[pi]}`:"2px solid transparent"}}>{t.l} ({D[pi]?.[t.k]?.length||0})</button>))}
+          <div style={{flex:1}}/>
+          <button onClick={()=>fRef.current?.click()} style={{...F,fontSize:8,padding:"3px 8px",background:`${Z.gn}12`,border:`1px solid ${Z.gn}25`,borderRadius:4,color:Z.gn,cursor:"pointer",marginRight:4}}>↑ Import</button>
+          <button onClick={expF} disabled={!td.length} style={{...F,fontSize:8,padding:"3px 8px",background:`${Z.bl}12`,border:`1px solid ${Z.bl}25`,borderRadius:4,color:td.length?Z.bl:Z.t3,marginRight:6,cursor:td.length?"pointer":"default"}}>↓ CSV</button>
+          <button onClick={addR} style={{...N,fontSize:10,fontWeight:600,padding:"4px 12px",background:Z.rs,border:`1px solid ${Z.bd}`,borderRadius:5,color:Z.tx,cursor:"pointer",marginRight:12}}>+ Row</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr><th style={{...F,fontSize:8,padding:"7px 4px",background:Z.sf,color:Z.t3,borderBottom:`1px solid ${Z.bd}`,position:"sticky",top:0,zIndex:1,width:28,textAlign:"center"}}>#</th>{tb?.c.map((c,ci)=>(<th key={ci} style={{...N,fontSize:10,fontWeight:600,padding:"7px 8px",background:Z.sf,color:Z.t2,borderBottom:`1px solid ${Z.bd}`,position:"sticky",top:0,zIndex:1,textAlign:"left",whiteSpace:"nowrap"}}>{c}</th>))}<th style={{background:Z.sf,borderBottom:`1px solid ${Z.bd}`,position:"sticky",top:0,width:40}}/></tr></thead>
+            <tbody>
+              {!td.length&&<tr><td colSpan={(tb?.c.length||0)+2} style={{padding:40,textAlign:"center",color:Z.t3,...N,fontSize:12,fontWeight:300}}>Empty — add rows, import CSV, or use AI</td></tr>}
+              {td.map((row,ri)=>(<tr key={ri} style={{background:ri%2?`${Z.sf}60`:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background=Z.cd} onMouseLeave={e=>e.currentTarget.style.background=ri%2?`${Z.sf}60`:"transparent"}>
+                <td style={{...F,fontSize:8,padding:"3px 4px",textAlign:"center",color:Z.t3,borderBottom:`1px solid ${Z.bd}30`}}>{ri+1}</td>
+                {row.map((cell,ci)=>(<td key={ci} style={{padding:"2px 4px",borderBottom:`1px solid ${Z.bd}30`}}>{er===ri?<input value={cell} onChange={e=>uC(ri,ci,e.target.value)} style={{width:"100%",...N,fontSize:11,background:Z.rs,border:`1px solid ${PC[pi]}40`,borderRadius:3,padding:"4px 6px",color:Z.tx,outline:"none"}}/>:<span onClick={()=>sEr(ri)} style={{cursor:"pointer",...N,fontSize:11,color:cell?Z.tx:Z.t3,display:"block",padding:"4px 6px",minHeight:20,fontWeight:300}}>{cell||"—"}</span>}</td>))}
+                <td style={{padding:"2px",borderBottom:`1px solid ${Z.bd}30`,textAlign:"center"}}>{er===ri?<React.Fragment><button onClick={()=>sEr(null)} style={{background:"none",border:"none",cursor:"pointer",color:Z.gn,fontSize:12}}>✓</button><button onClick={()=>dR(ri)} style={{background:"none",border:"none",cursor:"pointer",color:Z.rd,fontSize:10}}>✕</button></React.Fragment>:<button onClick={()=>sEr(ri)} style={{background:"none",border:"none",cursor:"pointer",...F,fontSize:8,color:Z.t3}}>edit</button>}</td>
+              </tr>))}
+            </tbody>
+          </table>
+        </div>
+      </div>)}
+
+      {/* ═══ AI ═══ */}
+      {vw==="wiz"&&(<div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 48px)"}}>
+        <div style={{padding:"10px 20px",background:Z.sf,borderBottom:`1px solid ${Z.bd}`,display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:3,height:20,borderRadius:2,background:PC[pi]}}/><span style={{...N,fontSize:15,fontWeight:700,color:Z.tx}}>{ph.n}</span><span style={{...F,fontSize:9,color:Z.t3}}>AI</span><div style={{flex:1}}/><button onClick={()=>oP(pi)} style={{...F,fontSize:9,padding:"4px 10px",background:Z.rs,border:`1px solid ${Z.bd}`,borderRadius:5,color:Z.t2,cursor:"pointer"}}>◈ Tables</button></div>
+        <div style={{flex:1,overflowY:"auto",padding:16}}>{ms.map((m,i)=>(<div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",marginBottom:8}}><div style={{maxWidth:"82%",padding:"9px 13px",borderRadius:10,background:m.role==="user"?PC[pi]:Z.cd,color:m.role==="user"?"#fff":Z.tx,border:m.role==="user"?"none":`1px solid ${Z.bd}`,...N,fontSize:13,lineHeight:1.55,fontWeight:300}}>{m.role==="user"?m.content:<div dangerouslySetInnerHTML={{__html:md(m.content)}}/>}</div></div>))}{ld&&<div style={{padding:"9px 13px",borderRadius:10,background:Z.cd,border:`1px solid ${Z.bd}`,...N,fontSize:13,color:Z.t3,display:"inline-block"}}>Thinking...</div>}<div ref={cEnd}/></div>
+        <div style={{padding:"10px 16px",borderTop:`1px solid ${Z.bd}`,background:Z.sf}}><div style={{display:"flex",gap:6}}><input value={inp} onChange={e=>sInp(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} disabled={ld} placeholder={`Ask about ${ph.n.toLowerCase()}...`} style={{flex:1,...N,fontSize:13,padding:"9px 12px",borderRadius:7,border:`1px solid ${Z.bd}`,background:Z.bg,color:Z.tx,outline:"none",fontWeight:300}}/><button onClick={send} disabled={ld||!inp.trim()} style={{...N,fontSize:13,fontWeight:600,padding:"9px 18px",borderRadius:7,border:"none",background:!inp.trim()||ld?Z.rs:PC[pi],color:!inp.trim()||ld?Z.t3:"#fff",cursor:ld?"wait":"pointer"}}>Send</button></div></div>
+      </div>)}
+
+      {/* ═══ QUALITY ═══ */}
+      {vw==="qual"&&(<div style={{padding:"24px",maxWidth:900,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24}}><div style={{background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:14,width:80,height:80,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{...S,fontSize:36,fontWeight:700,color:Z.gn}}>{grade}</div><div style={{...F,fontSize:9,color:Z.t2}}>{oQ}%</div></div><div><h2 style={{...S,fontSize:20,fontWeight:700,color:Z.tx,margin:0}}>Quality</h2><p style={{...N,fontSize:11,color:Z.t2,margin:"4px 0 0",fontWeight:300}}>Real Estate Tool</p></div></div>
+        {PH.map((p,idx)=>{const sc=qs[idx];const rc=p.t.reduce((s,t)=>s+(D[idx]?.[t.k]?.length||0),0);return(<div key={idx} onClick={()=>oP(idx)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:Z.cd,border:`1px solid ${Z.bd}`,borderRadius:7,cursor:"pointer",marginBottom:3}} onMouseEnter={e=>e.currentTarget.style.borderColor=PC[idx]+"50"} onMouseLeave={e=>e.currentTarget.style.borderColor=Z.bd}><div style={{width:3,height:24,borderRadius:2,background:PC[idx]}}/><span style={{...F,fontSize:9,color:PC[idx],fontWeight:600,width:16}}>{idx+1}</span><span style={{...N,fontSize:12,fontWeight:500,color:Z.tx,flex:1}}>{p.n}</span><span style={{...F,fontSize:9,color:Z.t3}}>{rc}</span><div style={{width:100,height:4,background:Z.bd,borderRadius:2}}><div style={{height:4,borderRadius:2,width:`${sc*100}%`,background:sc===1?Z.gn:sc>0?Z.am:Z.bd}}/></div><span style={{...F,fontSize:10,fontWeight:600,color:sc===1?Z.gn:sc>0?Z.am:Z.t3,width:22,textAlign:"right"}}>{sc===1?"✓":Math.round(sc*100)+"%"}</span></div>)})}
+      </div>)}
+
+      {["dash","qual","tpl"].includes(vw)&&(<div style={{borderTop:`1px solid ${Z.bd}`,padding:"10px 24px",display:"flex",justifyContent:"space-between",marginTop:16}}><span style={{...F,fontSize:7,color:Z.t3}}>BAForge v6 · SFL Consulting · IndexedDB</span><span style={{...S,fontSize:9,color:Z.g3,fontStyle:"italic"}}>Forged in 25 years of delivery</span></div>)}
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(BAForge));
+
+} catch(e) {
+  document.getElementById('err').style.display='block';
+  document.getElementById('err').textContent='Runtime Error: '+e.message+'\n'+e.stack;
+}
+</script>
+</body>
+</html>
